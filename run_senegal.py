@@ -61,7 +61,6 @@ def run_sim():
     pars['force_choose'] = False,         # Whether to force non-users to choose a method ('False' by default)
     # Weights assigned to dictate preferences between methods:
     method_weights = dict(
-        none=1,
         pill=1,
         iud=1,
         inj=1,
@@ -72,7 +71,7 @@ def run_sim():
         othtrad=1,
         othmod=1,
     )
-    pars['method_weights'] = method_weights.values()  # Weights for the methods in method_list in methods.py (excluding 'none', so starting with 'pill' and ending in 'othmod').
+    pars['method_weights'] = np.array([*method_weights.values()])  # Weights for the methods in method_list in methods.py (excluding 'none', so starting with 'pill' and ending in 'othmod').
 
     # Print out free params being used
     print("PARAMETERS BEING SET:")
