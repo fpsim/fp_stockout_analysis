@@ -28,8 +28,8 @@ def make_pars():
 
     # Adjust contraceptive choice parameters
     pars['prob_use_year'] = 2020  # Base year
-    pars['prob_use_trend_par'] = 0.1  # Time trend in contraceptive use - adjust this to get steeper/slower trend
-    pars['prob_use_intercept'] = -.7  # Intercept for the probability of using contraception - shifts the mCPR level
+    pars['prob_use_trend_par'] = 0.08  # Time trend in contraceptive use - adjust this to get steeper/slower trend
+    pars['prob_use_intercept'] = -.5  # Intercept for the probability of using contraception - shifts the mCPR level
 
     # Weights assigned to dictate preferences between methods:
     method_weights = dict(
