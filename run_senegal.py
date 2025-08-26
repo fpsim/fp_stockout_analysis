@@ -4,15 +4,18 @@ discrepancies between the model and data.
 """
 import numpy as np
 import fpsim as fp
+import pandas as pd
 import sciris as sc
-from fpsim import plotting as plt
+import starsim as ss
+import matplotlib.pyplot as pl
+from fpsim import plotting as fpplt
 
 # Settings
 country = 'senegal'
-plt.Config.set_figs_directory('figures/')
-plt.Config.do_save = True
-plt.Config.do_show = False
-plt.Config.show_rmse = False
+fpplt.Config.set_figs_directory('figures/')
+fpplt.Config.do_save = True
+fpplt.Config.do_show = False
+fpplt.Config.show_rmse = False
 
 
 def make_pars():
@@ -25,8 +28,8 @@ def make_pars():
 
     # Adjust contraceptive choice parameters
     pars['prob_use_year'] = 2020  # Base year
-    pars['prob_use_trend_par'] = 0.01  # Time trend in contraceptive use
-    pars['prob_use_intercept'] = -1  # Intercept for the probability of using contraception
+    pars['prob_use_trend_par'] = 0.1  # Time trend in contraceptive use - adjust this to get steeper/slower trend
+    pars['prob_use_intercept'] = -.7  # Intercept for the probability of using contraception - shifts the mCPR level
 
     # Weights assigned to dictate preferences between methods:
     method_weights = dict(
@@ -62,6 +65,62 @@ def make_sim(pars=None, stop=2021):
     return sim
 
 
+def plot_cpr(sim, start_year=2005, end_year=None, ax=None, legend_kwargs={}):
+    '''
+    Plot contraceptive prevalence rate for model vs data
+    '''
+
+    # Import data
+    fpet = pd.read_csv('mcpr.csv')
+    res = sim.results
+
+    # Data to plot
+    plot_data = fpet.loc[fpet.year >= start_year]
+    si = sc.findfirst(res['timevec'] >= start_year)
+
+    # Plot
+    ax.plot(plot_data['year'], plot_data['50%']*100, label='FPET', color='black')
+    ax.fill_between(plot_data['year'], plot_data['2.5%']*100, plot_data['97.5%']*100, color='lightgray', label='FPET 95% CI')
+    ax.plot(res['timevec'].years[si:], res.contraception.mcpr[si:] * 100, label='FPsim', color='cornflowerblue')
+    ax.set_xlabel('Year')
+    ax.set_ylabel('Percent')
+    ax.set_title(f'mCPR')
+    ax.legend(**legend_kwargs)
+
+    return ax
+
+
+def plot_calib(sim, single_fig=False, fig_kwargs=None, legend_kwargs=None):
+    """ Plots the commonly used plots for calibration """
+
+    if legend_kwargs is None:
+        legend_kwargs = {'frameon': False, 'loc': 'best', 'fontsize': 15}
+
+    if single_fig:
+        if fig_kwargs is None:
+            fig_kwargs = {'figsize': (15, 9)}
+        fig, axes = pl.subplots(2, 3, **fig_kwargs)
+        axes = axes.flatten()
+
+    def ax_arg(i):
+        """Returns the appropriate axis for plotting"""
+        return axes[i] if single_fig else None
+
+    plot_cpr(sim, ax=ax_arg(0), legend_kwargs=legend_kwargs)
+    fpplt.plot_tfr(sim, ax=ax_arg(1), legend_kwargs=legend_kwargs)
+    fpplt.plot_method_use(sim, ax=ax_arg(2), legend_kwargs=legend_kwargs)
+    fpplt.plot_method_mix(sim, ax=ax_arg(3), legend_kwargs=legend_kwargs)
+    fpplt.plot_afb(sim, ax=ax_arg(4), legend_kwargs=legend_kwargs)
+    fpplt.plot_birth_spacing(sim, ax=ax_arg(5), legend_kwargs=legend_kwargs)
+
+    if single_fig:
+        fig.tight_layout()
+        fig_name = 'figures/calibration_plots.png'
+        sc.savefig(fig_name, dpi=100)
+
+    return
+
+
 if __name__ == '__main__':
     do_run = True  # Whether to run the sim or load from file
     if do_run:
@@ -73,5 +132,5 @@ if __name__ == '__main__':
         sim = sc.loadobj(f'results/{country}_calib.sim')
 
     # Set options for plotting
-    sc.options(fontsize=20)
-    plt.plot_calib(sim, single_fig=True)
+    # sc.options(fontsize=20)  # Set fontsize
+    plot_calib(sim, single_fig=True)
